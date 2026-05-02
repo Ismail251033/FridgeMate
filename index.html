@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff6b35" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FridgeMate" />
+  <meta name="description" content="Find recipes based on what's in your fridge — instantly." />
+
+  <title>FridgeMate — Cook What You Have</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="pwa/manifest.json" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Favicon (inline SVG as data-uri) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥘</text></svg>" />
+</head>
+<body>
+
+  <!-- ===== APP WRAPPER ===== -->
+  <div class="app-wrapper">
+
+    <!-- Header -->
+    <header>
+      <div class="logo">
+        <div class="logo-icon">🥘</div>
+        <div>
+          <span class="logo-text">FridgeMate</span>
+          <span class="logo-tagline">Cook what you have</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <!-- Camera button (hidden on desktop via JS) -->
+        <button id="camera-btn" class="btn btn-ghost" style="display:none;">📷 Scan</button>
+      </div>
+    </header>
+
+    <!-- PWA Install Banner -->
+    <div id="install-banner" role="status" aria-live="polite">
+      <span style="font-size:1.4rem;">📱</span>
+      <div class="install-info">
+        <strong>Install FridgeMate</strong>
+        <small>Add to home screen for offline use</small>
+      </div>
+      <button id="install-btn" class="btn btn-primary" style="white-space:nowrap; padding: 8px 14px; font-size: 0.82rem;">Install</button>
+      <button id="install-dismiss">×</button>
+    </div>
+
+    <!-- Smart Suggestions Banner -->
+    <div id="smart-banner" role="status" aria-live="polite">
+      <span class="smart-icon">✨</span>
+      <span id="smart-banner-text"></span>
+      <button id="smart-banner-close">×</button>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1>What's in your<br><span class="hero-accent">fridge?</span></h1>
+      <p class="hero-subtitle">Add your ingredients and we'll find<br>recipes you can make right now.</p>
+    </section>
+
+    <!-- Ingredient Input -->
+    <section class="input-section" aria-label="Add ingredients">
+      <div class="input-label">
+        <span class="input-label-text">Your ingredients</span>
+        <span id="ingredient-count" style="font-size:0.78rem; color: var(--text-3);">0 items</span>
+      </div>
+
+      <div class="input-row">
+        <div class="ingredient-input-wrap">
+          <input
+            type="text"
+            id="ingredient-input"
+            placeholder="e.g. eggs, pasta, garlic…"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            aria-label="Add ingredient"
+          />
+          <div id="autocomplete" role="listbox" aria-label="Suggestions"></div>
+        </div>
+        <button id="add-btn" class="btn btn-primary">Add</button>
+      </div>
+
+      <!-- Ingredients list -->
+      <div id="ingredients-list" aria-label="Ingredient list"></div>
+      <div id="ingredients-empty" style="display:block;">
+        <span style="opacity:.5">🫙</span> Start by adding what you have at home
+      </div>
+
+      <!-- Clear all -->
+      <div style="display:flex; justify-content:flex-end; margin-top: 12px;">
+        <button id="clear-all-btn" class="btn-icon btn-danger" aria-label="Clear all ingredients">Clear all</button>
+      </div>
+    </section>
+
+    <!-- Camera Section (mobile only) -->
+    <section id="camera-section" aria-label="Camera scan">
+      <div class="camera-inner">
+        <video id="camera-feed" autoplay playsinline muted aria-label="Camera feed"></video>
+        <div class="camera-controls">
+          <button id="capture-btn" class="btn btn-primary">📸 Capture</button>
+          <button id="cancel-scan-btn" class="btn btn-ghost">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Buttons -->
+    <div class="action-row">
+      <button id="find-recipes-btn" class="btn btn-primary">🔍 Find Recipes</button>
+    </div>
+
+    <!-- Mode Toggles -->
+    <div class="mode-row" role="group" aria-label="Recipe modes">
+      <button id="quick-mode-btn" class="btn-mode">⚡ Quick (≤10 min)</button>
+      <button id="budget-mode-btn" class="btn-mode">💰 Budget</button>
+    </div>
+
+    <!-- I'm Hungry Now -->
+    <button id="hungry-btn" class="hungry-btn" aria-label="Show fastest recipes">
+      <div class="hungry-pulse"></div>
+      ⚡ I'm Hungry Now
+      <span style="font-size: 0.78rem; opacity: 0.6; margin-left: 4px;">under 10 min</span>
+    </button>
+
+    <!-- Recipes Section -->
+    <section id="recipes-section" aria-label="Recipe suggestions">
+      <div class="recipes-header">
+        <h2>Recipes for you</h2>
+        <span id="recipes-count"></span>
+      </div>
+
+      <div id="recipes-grid" role="list" aria-label="Recipe cards"></div>
+
+      <!-- Empty state -->
+      <div id="recipes-empty" role="status">
+        <span class="empty-icon">🍽️</span>
+        <p class="empty-title">No recipes yet</p>
+        <p class="empty-subtitle">Add some ingredients above and we'll find what you can cook!</p>
+      </div>
+    </section>
+
+  </div><!-- /app-wrapper -->
+
+  <!-- ===== RECIPE MODAL ===== -->
+  <div id="recipe-modal" role="dialog" aria-modal="true" aria-label="Recipe details">
+    <div class="modal-sheet">
+      <div class="modal-handle">
+        <div class="modal-handle-bar"></div>
+        <button id="modal-close" aria-label="Close recipe">×</button>
+      </div>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ===== LOADING OVERLAY ===== -->
+  <div id="loading-overlay" aria-hidden="true">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- ===== SCRIPTS ===== -->
+ <script src="js/fridgemate.js" defer></script>
+
+</body>
+</html>
